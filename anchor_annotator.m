@@ -487,7 +487,7 @@ set(handles.pushbutton_part, 'Enable', 'Off');
 set(handles.pushbutton_clear, 'Enable', 'Off');
 set(handles.pushbutton_next_anchor, 'Enable', 'Off');
 set(handles.pushbutton_prev_anchor, 'Enable', 'Off');
-set(handles.pushbutton_save, 'Enable', 'Off');
+% set(handles.pushbutton_save, 'Enable', 'Off');
 set(handles.pushbutton_view, 'Enable', 'Off');
 set(handles.edit1, 'String', '0');
 set(handles.edit2, 'String', '0');
@@ -698,7 +698,7 @@ set(handles.pushbutton_part, 'Enable', 'Off');
 set(handles.pushbutton_clear, 'Enable', 'Off');
 set(handles.pushbutton_next_anchor, 'Enable', 'Off');
 set(handles.pushbutton_prev_anchor, 'Enable', 'Off');
-set(handles.pushbutton_save, 'Enable', 'Off');
+%set(handles.pushbutton_save, 'Enable', 'Off');
 set(handles.pushbutton_view, 'Enable', 'Off');
 set(handles.edit1, 'String', '0');
 set(handles.edit2, 'String', '0');
@@ -862,7 +862,7 @@ set(handles.pushbutton_part, 'Enable', 'Off');
 set(handles.pushbutton_clear, 'Enable', 'Off');
 set(handles.pushbutton_next_anchor, 'Enable', 'Off');
 set(handles.pushbutton_prev_anchor, 'Enable', 'Off');
-set(handles.pushbutton_save, 'Enable', 'Off');
+%set(handles.pushbutton_save, 'Enable', 'Off');
 set(handles.pushbutton_view, 'Enable', 'Off');
 set(handles.edit1, 'String', '0');
 set(handles.edit2, 'String', '0');
@@ -902,7 +902,7 @@ guidata(hObject, handles);
 if handles.partpos ~= numel(handles.anchor_index)
     set(handles.pushbutton_next_anchor, 'Enable', 'On');
 else
-    set(handles.pushbutton_save, 'Enable', 'On');
+%    set(handles.pushbutton_save, 'Enable', 'On');
 end
 
 
