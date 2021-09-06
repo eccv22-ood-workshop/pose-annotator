@@ -27,7 +27,7 @@ function varargout = anchor_annotator(varargin)
 
 % Edit the above text to modify the response to help anchor_annotator
 
-% Last Modified by GUIDE v2.5 15-Jul-2021 21:56:26
+% Last Modified by GUIDE v2.5 06-Sep-2021 20:58:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1627,6 +1627,10 @@ viewpoint.azimuth_coarse = handles.azimuth;
 viewpoint.elevation_coarse = handles.elevation;
 cad = handles.cad(handles.cad_index);
 
+
+
+
+
 % get anchor point annotations
 part_num = numel(cad.pnames);
 pnames = cad.pnames;
@@ -1725,7 +1729,15 @@ else
     
     matfile = sprintf('%s/%s.mat', handles.dest_dir, handles.name);
 
+    
+    fprintf('handles.object_index: %d \n', handles.object_index)
+    
     record = handles.record;
+    
+    fprintf('length(record.objects): %d \n', length(record.objects))
+    
+    
+    
     for i = 1:handles.part_num
         record.objects(handles.object_index).anchors.(handles.cad(handles.cad_index).pnames{i}) = handles.(handles.cad(handles.cad_index).pnames{i});
     end
@@ -1744,6 +1756,12 @@ else
     record.objects(handles.object_index).viewpoint.viewport = 3000;
 
     save(matfile, 'record');
+    
+    % load again to refresh the handles
+    object = load(matfile);
+    record = object.record;
+    handles.record = record;
+    
     handles.count_save = handles.count_save + 1;
     str = sprintf('Annotation saved, total %d', handles.count_save);
     set(handles.text_save, 'String', str);
@@ -2061,3 +2079,21 @@ x = (R2d * x)';
 % transform to image coordinates
 x(:,2) = -1 * x(:,2);
 x = x + repmat(principal, size(x,1), 1);
+
+
+% --- Executes on key press with focus on pushbutton_view and none of its controls.
+function pushbutton_view_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to pushbutton_view (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.CONTROL.UICONTROL)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- If Enable == 'on', executes on mouse press in 5 pixel border.
+% --- Otherwise, executes on mouse press in 5 pixel border or over pushbutton_view.
+function pushbutton_view_ButtonDownFcn(hObject, eventdata, handles)
+% hObject    handle to pushbutton_view (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
