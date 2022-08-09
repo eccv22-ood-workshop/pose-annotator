@@ -1649,7 +1649,8 @@ num_anch = size(x2d,1);
 if num_anch < 2
       set(handles.text_filename, 'String', 'number of anchor less than 2');
 else
-    % inialization
+    %{
+    % initialization
     v0 = zeros(7,1);
     % azimuth
     a = viewpoint.azimuth_coarse;
@@ -1686,18 +1687,19 @@ else
     v_out = zeros(10,1);
     [v_out(1), v_out(2), v_out(3), v_out(4), v_out(5), v_out(6), v_out(7), v_out(8), v_out(9), v_out(10)]...
         = compute_viewpoint_one(v0, lb, ub, x2d, x3d);
+    %}
 
     % assign output
-    azimuth = v_out(1);
-    elevation = v_out(2);
-    distance = v_out(3); 
-    focal = v_out(4);
-    px = v_out(5);
-    py = v_out(6);
-    theta = v_out(7);
-    error = v_out(8);
-    interval_azimuth = v_out(9);
-    interval_elevation = v_out(10);
+    azimuth = 0;
+    elevation = 0;
+    distance = 0; 
+    focal = 0;
+    px = 0;
+    py = 0;
+    theta = 0;
+    error = 0;
+    interval_azimuth = 0;
+    interval_elevation = 0;
     str = sprintf('a=%f, e=%f, d=%f, f=%f, theta=%f\n', azimuth, elevation,...
             distance, focal, theta);
     set(handles.text_filename, 'String', str);
@@ -1714,6 +1716,7 @@ else
     object.viewpoint.py = py;
     object.viewpoint.viewport = 3000;
     x2d = project_3d_points(vertices, object);
+    %{
     if isempty(x2d) == 0
         set(handles.figure1, 'CurrentAxes', handles.axes_image);
         hold on;
@@ -1721,6 +1724,7 @@ else
             'FaceColor', 'blue', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
         hold off;
     end
+    %}
     
     handles.azimuth = azimuth; 
     handles.elevation = elevation;
@@ -1735,6 +1739,7 @@ else
     record = handles.record;
     
     fprintf('length(record.objects): %d \n', length(record.objects))
+    
     
     
     
@@ -1765,6 +1770,40 @@ else
     handles.count_save = handles.count_save + 1;
     str = sprintf('Annotation saved, total %d', handles.count_save);
     set(handles.text_save, 'String', str);
+
+    % show the annotations
+    for i = 1:numel(record.objects)
+        if strcmp(record.objects(i).class, handles.cls) == 1
+            bbox = record.objects(i).bbox;
+            bbox_draw = [bbox(1) bbox(2) bbox(3)-bbox(1) bbox(4)-bbox(2)];
+            set(handles.figure1, 'CurrentAxes', handles.axes_image);
+            cla;
+            imshow(handles.image);
+            hold on;
+            rectangle('Position', bbox_draw, 'EdgeColor', 'g');
+            handles.object_index = i;
+            % show annotated anchor points
+            if isfield(record.objects(i), 'anchors') == 1 && isempty(record.objects(i).anchors) == 0
+                names = fieldnames(record.objects(i).anchors);
+                for j = 1:numel(names)
+                    if record.objects(i).anchors.(names{j}).status == 1
+                        if isempty(record.objects(i).anchors.(names{j}).location) == 0
+                            x = record.objects(i).anchors.(names{j}).location(1);
+                            y = record.objects(i).anchors.(names{j}).location(2);
+                            plot(x, y, 'ro');
+                        else
+                            fprintf('anchor point %s is missing!\n', names{j});
+                            set(handles.text_save, 'String', 'Re-annotate!');
+                        end
+                    end
+                end                
+            end
+            break;
+        end
+    end     
+
+
+
 
 end
 
