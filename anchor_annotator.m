@@ -27,9 +27,10 @@ function varargout = anchor_annotator(varargin)
 
 % Edit the above text to modify the response to help anchor_annotator
 
-% Last Modified by GUIDE v2.5 06-Sep-2021 20:58:46
+% Last Modified by GUIDE v2.5 22-Aug-2022 11:05:04
 
 % Begin initialization code - DO NOT EDIT
+
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
@@ -2136,3 +2137,175 @@ function pushbutton_view_ButtonDownFcn(hObject, eventdata, handles)
 % hObject    handle to pushbutton_view (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
+function setGlobal_pose(val)
+global pose_num;
+pose_num = val;
+
+function r = getGlobal_pose
+global pose_num;
+if isempty(pose_num)
+    pose_num = 1;
+end
+r = pose_num;
+
+function pose = get_pose
+global pose_num;
+pose_arr = [0 -90; 0 -45; 0 0; 0 45; 0 90; 
+            60 -90; 60 -45; 60 0; 60 45; 60 90; 
+            120 -90; 120 -45; 120 0; 120 45; 120 90;
+            180 -90; 180 -45; 180 0; 180 45; 180 90;
+            270 -90; 270 -45; 270 0; 270 45; 270 90;
+            ];
+
+pose = pose_arr(pose_num,:);
+
+% --- Executes on button press in pushbutton29.
+function pushbutton29_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton29 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global pose_num;
+% display cad model
+cad = handles.cad;
+set(handles.figure1, 'CurrentAxes', handles.axes_cad);
+cla;
+trimesh(cad(handles.cad_index).faces, cad(handles.cad_index).vertices(:,1), cad(handles.cad_index).vertices(:,2), cad(handles.cad_index).vertices(:,3), 'EdgeColor', 'b');
+axis equal;
+hold on;
+
+% display anchor points
+for i = 1:numel(cad(handles.cad_index).pnames)
+    X = cad(handles.cad_index).(cad(handles.cad_index).pnames{i});
+    if isempty(X) == 0
+        plot3(X(1), X(2), X(3), 'ro', 'LineWidth', 5);
+    end
+end
+hold off;
+
+%handles.elevation = handles.elevation - 2.5;
+%if handles.elevation < -90
+%    handles.elevation = -90;
+%end
+pose_num = getGlobal_pose();
+pose_num = pose_num - 1;
+if pose_num < 1
+    pose_num = 25;
+end
+
+setGlobal_pose(pose_num)
+new_pose = get_pose();
+
+handles.azimuth = new_pose(1);
+handles.elevation = new_pose(2);
+
+view(handles.azimuth, handles.elevation);
+guidata(hObject, handles);
+
+set(handles.edit_azimuth, 'String', num2str(handles.azimuth));
+set(handles.edit_elevation, 'String', num2str(handles.elevation));
+
+
+% --- Executes on button press in pushbutton30.
+function pushbutton30_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton29 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global pose_num;
+% display cad model
+cad = handles.cad;
+set(handles.figure1, 'CurrentAxes', handles.axes_cad);
+cla;
+trimesh(cad(handles.cad_index).faces, cad(handles.cad_index).vertices(:,1), cad(handles.cad_index).vertices(:,2), cad(handles.cad_index).vertices(:,3), 'EdgeColor', 'b');
+axis equal;
+hold on;
+
+% display anchor points
+for i = 1:numel(cad(handles.cad_index).pnames)
+    X = cad(handles.cad_index).(cad(handles.cad_index).pnames{i});
+    if isempty(X) == 0
+        plot3(X(1), X(2), X(3), 'ro', 'LineWidth', 5);
+    end
+end
+hold off;
+
+%handles.elevation = handles.elevation - 2.5;
+%if handles.elevation < -90
+%    handles.elevation = -90;
+%end
+pose_num = getGlobal_pose();
+pose_num = pose_num + 1;
+if pose_num > 25
+    pose_num = 1;
+end
+
+setGlobal_pose(pose_num)
+new_pose = get_pose();
+
+% % % 
+handles.azimuth = new_pose(1);
+handles.elevation = new_pose(2);
+
+view(handles.azimuth, handles.elevation);
+guidata(hObject, handles);
+
+set(handles.edit_azimuth, 'String', num2str(handles.azimuth));
+set(handles.edit_elevation, 'String', num2str(handles.elevation));
+
+%{
+
+
+% hObject    handle to pushbutton30 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% display cad model
+cad = handles.cad;
+set(handles.figure1, 'CurrentAxes', handles.axes_cad);
+cla;
+trimesh(cad(handles.cad_index).faces, cad(handles.cad_index).vertices(:,1), cad(handles.cad_index).vertices(:,2), cad(handles.cad_index).vertices(:,3), 'EdgeColor', 'b');
+axis equal;
+hold on;
+
+% display anchor points
+for i = 1:numel(cad(handles.cad_index).pnames)
+    X = cad(handles.cad_index).(cad(handles.cad_index).pnames{i});
+    if isempty(X) == 0
+        plot3(X(1), X(2), X(3), 'ro', 'LineWidth', 5);
+    end
+end
+hold off;
+
+
+if handles.azimuth > 300
+    handles.azimuth = 300;
+elseif handles.azimuth > 240
+    handles.azimuth = 240;
+elseif handles.azimuth > 180
+    handles.azimuth = 180;
+elseif handles.azimuth > 120
+    handles.azimuth = 120;
+elseif handles.azimuth > 60
+    handles.azimuth = 60;
+elseif handles.azimuth > 0
+    handles.azimuth = 0;
+elseif handles.elevation > 45
+    handles.elevation = 45;
+elseif handles.elevation > 0
+    handles.elevation = 0;
+elseif handles.elevation > -45
+    handles.elevation = -45;
+elseif handles.elevation > -90
+    handles.elevation = -90;
+end
+
+
+
+view(handles.azimuth, handles.elevation);
+guidata(hObject, handles);
+
+set(handles.edit_azimuth, 'String', num2str(handles.azimuth));
+set(handles.edit_elevation, 'String', num2str(handles.elevation));
+%}
+
