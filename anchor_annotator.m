@@ -30,7 +30,6 @@ function varargout = anchor_annotator(varargin)
 % Last Modified by GUIDE v2.5 22-Aug-2022 12:31:55
 
 % Begin initialization code - DO NOT EDIT
-
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
@@ -1535,6 +1534,13 @@ set(handles.radiobutton_unknown, 'Enable', 'On');
 %set(handles.radiobutton_visible, 'Value', 1.0);
 %set(handles.pushbutton_view, 'Enable', 'On');
 
+set(handles.radiobutton_visible, 'Enable', 'Off');
+set(handles.radiobutton_occld, 'Enable', 'Off');
+set(handles.radiobutton_occld_by, 'Enable', 'Off');
+set(handles.radiobutton_trunc, 'Enable', 'Off');
+set(handles.radiobutton_unknown, 'Enable', 'Off');
+    
+
 handles.status_ok = 0;
 %handles.status_ok
 
@@ -1649,9 +1655,21 @@ while while_flag
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% label anchor point
 
+    set(handles.radiobutton_visible, 'Enable', 'On');
+    set(handles.radiobutton_occld, 'Enable', 'On');
+    set(handles.radiobutton_occld_by, 'Enable', 'On');
+    set(handles.radiobutton_trunc, 'Enable', 'On');
+    set(handles.radiobutton_unknown, 'Enable', 'On');
+
     set(handles.radiobutton_visible, 'Value', 0.0);
     uiwait();
 
+
+    set(handles.radiobutton_visible, 'Enable', 'Off');
+    set(handles.radiobutton_occld, 'Enable', 'Off');
+    set(handles.radiobutton_occld_by, 'Enable', 'Off');
+    set(handles.radiobutton_trunc, 'Enable', 'Off');
+    set(handles.radiobutton_unknown, 'Enable', 'Off');
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% next anchor
     
