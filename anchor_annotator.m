@@ -1525,7 +1525,7 @@ function pushbutton_ok_Callback(hObject, eventdata, handles)
 
 status_set = get_status_set();
 
-set(handles.pushbutton_part, 'Enable', 'On');
+%set(handles.pushbutton_part, 'Enable', 'On');
 set(handles.pushbutton_clear, 'Enable', 'On');
 set(handles.radiobutton_visible, 'Enable', 'On');
 set(handles.radiobutton_occld, 'Enable', 'On');
@@ -1533,7 +1533,7 @@ set(handles.radiobutton_occld_by, 'Enable', 'On');
 set(handles.radiobutton_trunc, 'Enable', 'On');
 set(handles.radiobutton_unknown, 'Enable', 'On');
 %set(handles.radiobutton_visible, 'Value', 1.0);
-set(handles.pushbutton_view, 'Enable', 'On');
+%set(handles.pushbutton_view, 'Enable', 'On');
 
 handles.status_ok = 0;
 %handles.status_ok
@@ -1641,7 +1641,7 @@ while while_flag
     %handles.(handles.partname).location
 
     if handles.partpos ~= numel(handles.anchor_index)
-        set(handles.pushbutton_next_anchor, 'Enable', 'On');
+        %set(handles.pushbutton_next_anchor, 'Enable', 'On');
     else
     %    set(handles.pushbutton_save, 'Enable', 'On');
         while_flag = false;
@@ -1691,7 +1691,7 @@ while while_flag
     set(handles.pushbutton_next_anchor, 'Enable', 'Off');
     %set(handles.radiobutton_visible, 'Value', 1.0);
     if handles.partpos == 2
-        set(handles.pushbutton_prev_anchor, 'Enable', 'On');
+     %   set(handles.pushbutton_prev_anchor, 'Enable', 'On');
     end
     set(handles.edit1, 'String', '0');
     set(handles.edit2, 'String', '0');
@@ -1721,6 +1721,156 @@ while while_flag
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% next anchor
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% save annotations
+% retrieve annotation
+viewpoint.azimuth_coarse = handles.azimuth;
+viewpoint.elevation_coarse = handles.elevation;
+cad = handles.cad(handles.cad_index);
+
+
+
+
+
+% get anchor point annotations
+part_num = numel(cad.pnames);
+pnames = cad.pnames;
+x2d = [];
+x3d = [];
+for j = 1:handles.anchor_index(handles.partpos) %part_num
+    if isempty(handles.(pnames{j}).location) == 0  % filters the point not clicked on the image
+        p = handles.(pnames{j}).location;
+        x2d = [x2d; p];
+        x3d = [x3d; cad.(pnames{j})];
+    end
+end
+
+
+% compute continous viewpoint
+num_anch = size(x2d,1);
+if num_anch < 2
+    set(handles.text_filename, 'String', 'number of anchor less than 2');
+else
+    % inialization
+    v0 = zeros(7,1);
+    % azimuth
+    a = viewpoint.azimuth_coarse;
+    v0(1) = a*pi/180;
+    margin = 22.5;
+    aextent = [max(a-margin,0)*pi/180 min(a+margin,360)*pi/180];
+    % elevation
+    e = viewpoint.elevation_coarse;
+    v0(2) = e*pi/180;
+    margin = 22.5;
+    eextent = [max(e-margin,-90)*pi/180 min(e+margin,90)*pi/180];        
+    % distance
+    dextent = [0, 100];
+    v0(3) = compute_distance(v0(1), v0(2), dextent, x2d, x3d);
+    d = v0(3);
+    margin = 5;
+    dextent = [max(d-margin,0) min(d+margin,100)];
+    % focal length
+    v0(4) = 1;
+    fextent = [1 1];
+    % principal point
+    [principal_point, lbp, ubp] = compute_principal_point(v0(1), v0(2), v0(3), x2d, x3d);
+    v0(5) = principal_point(1);
+    v0(6) = principal_point(2);
+    % in-plane rotation
+    v0(7) = 0;
+    rextent = [-pi, pi];
+    % lower bound
+    lb = [aextent(1); eextent(1); dextent(1); fextent(1); lbp(1); lbp(2); rextent(1)];
+    % upper bound
+    ub = [aextent(2); eextent(2); dextent(2); fextent(2); ubp(1); ubp(2); rextent(2)];
+
+    % optimization
+    v_out = zeros(10,1);
+    [v_out(1), v_out(2), v_out(3), v_out(4), v_out(5), v_out(6), v_out(7), v_out(8), v_out(9), v_out(10)]...
+        = compute_viewpoint_one(v0, lb, ub, x2d, x3d);
+
+    % assign output
+    azimuth = v_out(1);
+    elevation = v_out(2);
+    distance = v_out(3); 
+    focal = v_out(4);
+    px = v_out(5);
+    py = v_out(6);
+    theta = v_out(7);
+    error = v_out(8);
+    interval_azimuth = v_out(9);
+    interval_elevation = v_out(10);
+    str = sprintf('a=%f, e=%f, d=%f, f=%f, theta=%f\n', azimuth, elevation,...
+            distance, focal, theta);
+    set(handles.text_filename, 'String', str);
+    
+    % show overlay of the CAD model
+    vertices = cad.vertices;
+    faces = cad.faces;
+    object.viewpoint.azimuth = azimuth;
+    object.viewpoint.elevation = elevation;
+    object.viewpoint.distance = distance;
+    object.viewpoint.focal = 1;
+    object.viewpoint.theta = theta;
+    object.viewpoint.px = px;
+    object.viewpoint.py = py;
+    object.viewpoint.viewport = 3000;
+    x2d = project_3d_points(vertices, object);
+    if isempty(x2d) == 0
+        set(handles.figure1, 'CurrentAxes', handles.axes_image);
+        hold on;
+        patch('vertices', x2d ,'faces', faces, ...
+            'FaceColor', 'blue', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+        hold off;
+    end
+    
+    handles.azimuth = azimuth; 
+    handles.elevation = elevation;
+    handles.distance = distance;
+    handles.theta = theta;
+    
+    matfile = sprintf('%s/%s.mat', handles.dest_dir, handles.name);
+
+    
+    fprintf('handles.object_index: %d \n', handles.object_index)
+    
+    record = handles.record;
+    
+    fprintf('length(record.objects): %d \n', length(record.objects))
+    
+    
+    
+    for i = 1:handles.part_num
+        record.objects(handles.object_index).anchors.(handles.cad(handles.cad_index).pnames{i}) = handles.(handles.cad(handles.cad_index).pnames{i});
+    end
+    record.objects(handles.object_index).viewpoint.azimuth_coarse = viewpoint.azimuth_coarse;
+    record.objects(handles.object_index).viewpoint.elevation_coarse = viewpoint.elevation_coarse;
+    record.objects(handles.object_index).cad_index = handles.cad_index;
+
+    record.objects(handles.object_index).viewpoint.azimuth = azimuth;
+    record.objects(handles.object_index).viewpoint.elevation = elevation;
+    record.objects(handles.object_index).viewpoint.theta = theta;
+    record.objects(handles.object_index).viewpoint.distance = distance;
+
+    record.objects(handles.object_index).viewpoint.focal = focal;
+    record.objects(handles.object_index).viewpoint.px = px;
+    record.objects(handles.object_index).viewpoint.py = py;
+    record.objects(handles.object_index).viewpoint.viewport = 3000;
+
+    save(matfile, 'record');
+    
+    % load again to refresh the handles
+    object = load(matfile);
+    record = object.record;
+    handles.record = record;
+    
+    handles.count_save = handles.count_save + 1;
+    str = sprintf('Annotation saved, total %d', handles.count_save);
+    set(handles.text_save, 'String', str);
+
+    
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% save annotations
 
 
 % --- Executes on button press in pushbutton_nextcad.
@@ -2298,34 +2448,55 @@ function pushbutton_view_ButtonDownFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-function setGlobal_pose(val)
-global pose_num;
-pose_num = val;
+function setGlobal_azimuth(val)
+global azi_num;
+azi_num = val;
 
-function r = getGlobal_pose
-global pose_num;
-if isempty(pose_num)
-    pose_num = 1;
+function r = getGlobal_azimuth
+global azi_num;
+if isempty(azi_num)
+    azi_num = 1;
 end
-r = pose_num;
+r = azi_num;
+
+function setGlobal_ele(val)
+global ele_num;
+ele_num = val;
+
+function r = getGlobal_ele
+global ele_num;
+if isempty(ele_num)
+    ele_num = 1;
+end
+r = ele_num;
+
+
+
 
 function pose = get_pose
-global pose_num;
-pose_arr = [0 -90; 0 -45; 0 0; 0 45; 0 90; 
-            60 -90; 60 -45; 60 0; 60 45; 60 90; 
-            120 -90; 120 -45; 120 0; 120 45; 120 90;
-            180 -90; 180 -45; 180 0; 180 45; 180 90;
-            270 -90; 270 -45; 270 0; 270 45; 270 90;
-            ];
+global azi_num;
+global ele_num;
 
-pose = pose_arr(pose_num,:);
+azimuth_arr =  [
+
+0; 45 ; 60 ; 90 ; 135 ; 180 ;
+235 ; 250 ; 295 ; 340 ; 
+
+            ];
+eleva_arr = [
+    0; 15; 35; 40; -10; -20;
+];
+
+pose = [azimuth_arr(azi_num, 1) eleva_arr(ele_num, 1)];
+
 
 % --- Executes on button press in pushbutton29.
 function pushbutton29_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton29 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global pose_num;
+global azi_num;
+
 % display cad model
 cad = handles.cad;
 set(handles.figure1, 'CurrentAxes', handles.axes_cad);
@@ -2347,14 +2518,15 @@ hold off;
 %if handles.elevation < -90
 %    handles.elevation = -90;
 %end
-pose_num = getGlobal_pose();
-pose_num = pose_num - 1;
-if pose_num < 1
-    pose_num = 25;
+azi_num = getGlobal_azimuth();
+azi_num = azi_num + 1;
+if azi_num > 10
+    azi_num = 1;
 end
 
-setGlobal_pose(pose_num)
+setGlobal_azimuth(azi_num)
 new_pose = get_pose();
+%new_pose
 
 handles.azimuth = new_pose(1);
 handles.elevation = new_pose(2);
@@ -2371,7 +2543,8 @@ function pushbutton30_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton29 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global pose_num;
+global ele_num;
+
 % display cad model
 cad = handles.cad;
 set(handles.figure1, 'CurrentAxes', handles.axes_cad);
@@ -2389,20 +2562,16 @@ for i = 1:numel(cad(handles.cad_index).pnames)
 end
 hold off;
 
-%handles.elevation = handles.elevation - 2.5;
-%if handles.elevation < -90
-%    handles.elevation = -90;
-%end
-pose_num = getGlobal_pose();
-pose_num = pose_num + 1;
-if pose_num > 25
-    pose_num = 1;
+ele_num = getGlobal_ele();
+ele_num = ele_num + 1;
+if ele_num > 6
+    ele_num = 1;
 end
 
-setGlobal_pose(pose_num)
+setGlobal_ele(ele_num)
 new_pose = get_pose();
+%new_pose
 
-% % % 
 handles.azimuth = new_pose(1);
 handles.elevation = new_pose(2);
 
@@ -2411,59 +2580,3 @@ guidata(hObject, handles);
 
 set(handles.edit_azimuth, 'String', num2str(handles.azimuth));
 set(handles.edit_elevation, 'String', num2str(handles.elevation));
-
-%{
-
-
-% hObject    handle to pushbutton30 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% display cad model
-cad = handles.cad;
-set(handles.figure1, 'CurrentAxes', handles.axes_cad);
-cla;
-trimesh(cad(handles.cad_index).faces, cad(handles.cad_index).vertices(:,1), cad(handles.cad_index).vertices(:,2), cad(handles.cad_index).vertices(:,3), 'EdgeColor', 'b');
-axis equal;
-hold on;
-
-% display anchor points
-for i = 1:numel(cad(handles.cad_index).pnames)
-    X = cad(handles.cad_index).(cad(handles.cad_index).pnames{i});
-    if isempty(X) == 0
-        plot3(X(1), X(2), X(3), 'ro', 'LineWidth', 5);
-    end
-end
-hold off;
-
-
-if handles.azimuth > 300
-    handles.azimuth = 300;
-elseif handles.azimuth > 240
-    handles.azimuth = 240;
-elseif handles.azimuth > 180
-    handles.azimuth = 180;
-elseif handles.azimuth > 120
-    handles.azimuth = 120;
-elseif handles.azimuth > 60
-    handles.azimuth = 60;
-elseif handles.azimuth > 0
-    handles.azimuth = 0;
-elseif handles.elevation > 45
-    handles.elevation = 45;
-elseif handles.elevation > 0
-    handles.elevation = 0;
-elseif handles.elevation > -45
-    handles.elevation = -45;
-elseif handles.elevation > -90
-    handles.elevation = -90;
-end
-
-
-
-view(handles.azimuth, handles.elevation);
-guidata(hObject, handles);
-
-set(handles.edit_azimuth, 'String', num2str(handles.azimuth));
-set(handles.edit_elevation, 'String', num2str(handles.elevation));
-%}
