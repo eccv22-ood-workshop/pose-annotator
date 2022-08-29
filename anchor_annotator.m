@@ -27,10 +27,9 @@ function varargout = anchor_annotator(varargin)
 
 % Edit the above text to modify the response to help anchor_annotator
 
-% Last Modified by GUIDE v2.5 22-Aug-2022 11:05:04
+% Last Modified by GUIDE v2.5 22-Aug-2022 12:31:55
 
 % Begin initialization code - DO NOT EDIT
-
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
@@ -924,9 +923,30 @@ hold on;
 rectangle('Position', bbox_draw, 'EdgeColor', 'g');
 hold off;
 
-handles.(handles.partname).status = 0;
-handles.(handles.partname).location = [];
+%handles.(handles.partname).status = 0;
+%handles.(handles.partname).location = [];
+
+% find the visibility index
+cad = handles.cad;
+
+index_a = find(cad(handles.cad_index).azimuth == handles.azimuth);
+index_e = find(cad(handles.cad_index).elevation == handles.elevation);
+index = (index_a - 1) * numel(cad(handles.cad_index).elevation) + index_e;
+flag = cad(handles.cad_index).visibility(index).flag;
+handles.anchor_index = find(flag == 1);
+
+for i = 1:handles.part_num
+    handles.(cad(handles.cad_index).pnames{i}).location = [];
+    if flag(i) == 1
+        handles.(cad(handles.cad_index).pnames{i}).status = 0;
+    else
+        handles.(cad(handles.cad_index).pnames{i}).status = 2;
+    end
+end
+handles.partpos = 1;
+handles.partname = cad(handles.cad_index).pnames{handles.anchor_index(1)};
 guidata(hObject, handles);
+
 set(handles.edit1, 'String', '0');
 set(handles.edit2, 'String', '0');
 set(handles.radiobutton_visible, 'Value', 1.0);
@@ -1033,6 +1053,9 @@ function radiobutton_visible_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of radiobutton_visible
 handles.(handles.partname).status = 1; % 1 visible
+handles.status_ok = 1;
+uiresume();
+
 guidata(hObject, handles);
 
 
@@ -1043,7 +1066,8 @@ function radiobutton_occld_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of radiobutton_occld
-
+handles.status_ok = 1;
+uiresume();
 % re-show the image
 bbox = handles.record.objects(handles.object_index).bbox;
 bbox_draw = [bbox(1) bbox(2) bbox(3)-bbox(1) bbox(4)-bbox(2)];
@@ -1065,7 +1089,7 @@ guidata(hObject, handles);
 if handles.partpos ~= numel(handles.anchor_index)
     set(handles.pushbutton_next_anchor, 'Enable', 'On');
 else
-    set(handles.pushbutton_save, 'Enable', 'On');
+    %set(handles.pushbutton_save, 'Enable', 'On');
 end
 set(handles.edit1, 'String', '0');
 set(handles.edit2, 'String', '0');
@@ -1078,7 +1102,8 @@ function radiobutton_occld_by_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of radiobutton_occld_by
-
+handles.status_ok = 1;
+uiresume();
 % re-show the image
 bbox = handles.record.objects(handles.object_index).bbox;
 bbox_draw = [bbox(1) bbox(2) bbox(3)-bbox(1) bbox(4)-bbox(2)];
@@ -1113,6 +1138,8 @@ function radiobutton_trunc_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of radiobutton_trunc
+handles.status_ok = 1;
+uiresume();
 % re-show the image
 bbox = handles.record.objects(handles.object_index).bbox;
 bbox_draw = [bbox(1) bbox(2) bbox(3)-bbox(1) bbox(4)-bbox(2)];
@@ -1146,6 +1173,8 @@ function radiobutton_unknown_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of radiobutton_unknown
+handles.status_ok = 1;
+uiresume();
 % re-show the image
 bbox = handles.record.objects(handles.object_index).bbox;
 bbox_draw = [bbox(1) bbox(2) bbox(3)-bbox(1) bbox(4)-bbox(2)];
@@ -1290,7 +1319,7 @@ if handles.partpos == 1
     set(handles.pushbutton_prev_anchor, 'Enable', 'Off');
 end
 set(handles.pushbutton_next_anchor, 'Enable', 'On');
-set(handles.pushbutton_save, 'Enable', 'Off');
+%set(handles.pushbutton_save, 'Enable', 'Off');
 set(handles.text_save, 'String', '');
 
 
@@ -1476,21 +1505,44 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
+function set_status_set(val)
+global status_set;
+status_set = val;
+
+function r = get_status_set
+global status_set;
+if isempty(status_set)
+    status_set = 1;
+end
+r = status_set;
+
 % --- Executes on button press in pushbutton_ok.
 function pushbutton_ok_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_ok (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-set(handles.pushbutton_part, 'Enable', 'On');
+status_set = get_status_set();
+
+%set(handles.pushbutton_part, 'Enable', 'On');
 set(handles.pushbutton_clear, 'Enable', 'On');
 set(handles.radiobutton_visible, 'Enable', 'On');
 set(handles.radiobutton_occld, 'Enable', 'On');
 set(handles.radiobutton_occld_by, 'Enable', 'On');
 set(handles.radiobutton_trunc, 'Enable', 'On');
 set(handles.radiobutton_unknown, 'Enable', 'On');
-set(handles.radiobutton_visible, 'Value', 1.0);
-set(handles.pushbutton_view, 'Enable', 'On');
+%set(handles.radiobutton_visible, 'Value', 1.0);
+%set(handles.pushbutton_view, 'Enable', 'On');
+
+set(handles.radiobutton_visible, 'Enable', 'Off');
+set(handles.radiobutton_occld, 'Enable', 'Off');
+set(handles.radiobutton_occld_by, 'Enable', 'Off');
+set(handles.radiobutton_trunc, 'Enable', 'Off');
+set(handles.radiobutton_unknown, 'Enable', 'Off');
+    
+
+handles.status_ok = 0;
+%handles.status_ok
 
 % display cad model
 set(handles.figure1, 'CurrentAxes', handles.axes_cad);
@@ -1525,6 +1577,318 @@ plot3(X(1), X(2), X(3), 'ro', 'LineWidth', 5);
 view(handles.azimuth, handles.elevation);
 set(handles.text_pname, 'String', handles.partname);
 hold off;
+
+%%%%%%%%% newly added part.
+while_flag = true;
+num_anchor_anno = 1;
+locations = [0 0; 0 0];
+while while_flag
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% label anchor point
+    % re-show the image
+    bbox = handles.record.objects(handles.object_index).bbox;
+    bbox_draw = [bbox(1) bbox(2) bbox(3)-bbox(1) bbox(4)-bbox(2)];
+    set(handles.axes_image, 'NextPlot', 'replacechildren');
+    set(handles.figure1, 'CurrentAxes', handles.axes_image);
+    cla;
+    imshow(handles.image);
+    hold on;
+    rectangle('Position', bbox_draw, 'EdgeColor', 'g');
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% show already annotated anchors
+    %{
+    for partidx = 1:length(handles.anchor_index)
+        index = handles.anchor_index(partidx);
+        handles.partname = handles.cad(handles.cad_index).pnames{index};
+        
+        if length(handles.(handles.partname).location) < 2
+            continue
+        end
+        handles.partname
+        x = handles.(handles.partname).location(1);
+        y = handles.(handles.partname).location(2);
+        hold on;
+        plot(x, y, 'ro', 'LineWidth', 5);
+        hold off;
+    end
+    %}
+    %locations
+    for idx = 1:length(locations)
+        %if length(locations(idx)) < 2
+        %    locations(idx)
+        %    continue
+        %end
+        if locations(idx, 1) == 0
+            %locations(idx, 1)
+            continue
+        end
+        x = locations(idx, 1);
+        y = locations(idx, 2);
+        hold on;
+        plot(x, y, 'ro', 'LineWidth', 5);
+        hold off;
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% show already annotated anchors
+
+    hold off;
+    
+    set(handles.figure1, 'CurrentAxes', handles.axes_image);
+    [x, y] = ginput(1);
+    hold on;
+    plot(x, y, 'ro', 'LineWidth', 5);
+    hold off;
+    set(handles.edit1, 'String', num2str(x));
+    set(handles.edit2, 'String', num2str(y));
+    handles.(handles.partname).location = [x y];
+    locations = [locations; [x y]];
+    guidata(hObject, handles);
+    %handles
+    
+    %handles.partname
+    %handles.(handles.partname).location
+
+    if handles.partpos ~= numel(handles.anchor_index)
+        %set(handles.pushbutton_next_anchor, 'Enable', 'On');
+    else
+    %    set(handles.pushbutton_save, 'Enable', 'On');
+        while_flag = false;
+        break
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% label anchor point
+
+    set(handles.radiobutton_visible, 'Enable', 'On');
+    set(handles.radiobutton_occld, 'Enable', 'On');
+    set(handles.radiobutton_occld_by, 'Enable', 'On');
+    set(handles.radiobutton_trunc, 'Enable', 'On');
+    set(handles.radiobutton_unknown, 'Enable', 'On');
+
+    set(handles.radiobutton_visible, 'Value', 0.0);
+    uiwait();
+
+
+    set(handles.radiobutton_visible, 'Enable', 'Off');
+    set(handles.radiobutton_occld, 'Enable', 'Off');
+    set(handles.radiobutton_occld_by, 'Enable', 'Off');
+    set(handles.radiobutton_trunc, 'Enable', 'Off');
+    set(handles.radiobutton_unknown, 'Enable', 'Off');
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% next anchor
+    
+    handles.partpos = handles.partpos + 1;
+    index = handles.anchor_index(handles.partpos);
+    handles.partname = handles.cad(handles.cad_index).pnames{index};
+    set(handles.text_pname, 'String', handles.partname);
+    handles.(handles.partname).status = 0;
+    handles.(handles.partname).location = [];
+    %guidata(hObject, handles);
+    
+    % re-show the image
+    bbox = handles.record.objects(handles.object_index).bbox;
+    bbox_draw = [bbox(1) bbox(2) bbox(3)-bbox(1) bbox(4)-bbox(2)];
+    set(handles.axes_image, 'NextPlot', 'replacechildren');
+    set(handles.figure1, 'CurrentAxes', handles.axes_image);
+    cla;
+    imshow(handles.image);
+    hold on;
+    rectangle('Position', bbox_draw, 'EdgeColor', 'g');
+    hold off;
+    
+    % display cad model
+    set(handles.figure1, 'CurrentAxes', handles.axes_cad);
+    cla;
+    cad = handles.cad;
+    trimesh(cad(handles.cad_index).faces, cad(handles.cad_index).vertices(:,1), cad(handles.cad_index).vertices(:,2), cad(handles.cad_index).vertices(:,3), 'EdgeColor', 'b');
+    axis equal;
+    hold on;
+    
+    % display anchor points
+    X = cad(handles.cad_index).(handles.partname);
+    plot3(X(1), X(2), X(3), 'ro', 'LineWidth', 5);
+    view(handles.azimuth, handles.elevation);
+    hold off;
+    
+    set(handles.pushbutton_next_anchor, 'Enable', 'Off');
+    %set(handles.radiobutton_visible, 'Value', 1.0);
+    if handles.partpos == 2
+     %   set(handles.pushbutton_prev_anchor, 'Enable', 'On');
+    end
+    set(handles.edit1, 'String', '0');
+    set(handles.edit2, 'String', '0');
+
+    %'before'
+    %status_set
+    %{
+    'before'
+    handles.status_ok
+    waitfor(handles, 'status_ok', 1);
+    
+    
+    'after'
+    handles.status_ok
+    handles.status_ok = 0;
+    %}
+    
+    
+
+    %'after'
+    %status_set
+    %if handles.(handles.partname).status == 0
+    %    handles.(handles.partname).status = 1; % 1 visible
+    %    set(handles.radiobutton_visible, 'Value', 1.0);
+    %end
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% next anchor
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% save annotations
+% retrieve annotation
+viewpoint.azimuth_coarse = handles.azimuth;
+viewpoint.elevation_coarse = handles.elevation;
+cad = handles.cad(handles.cad_index);
+
+
+
+
+
+% get anchor point annotations
+part_num = numel(cad.pnames);
+pnames = cad.pnames;
+x2d = [];
+x3d = [];
+for j = 1:handles.anchor_index(handles.partpos) %part_num
+    if isempty(handles.(pnames{j}).location) == 0  % filters the point not clicked on the image
+        p = handles.(pnames{j}).location;
+        x2d = [x2d; p];
+        x3d = [x3d; cad.(pnames{j})];
+    end
+end
+
+
+% compute continous viewpoint
+num_anch = size(x2d,1);
+if num_anch < 2
+    set(handles.text_filename, 'String', 'number of anchor less than 2');
+else
+    % inialization
+    v0 = zeros(7,1);
+    % azimuth
+    a = viewpoint.azimuth_coarse;
+    v0(1) = a*pi/180;
+    margin = 22.5;
+    aextent = [max(a-margin,0)*pi/180 min(a+margin,360)*pi/180];
+    % elevation
+    e = viewpoint.elevation_coarse;
+    v0(2) = e*pi/180;
+    margin = 22.5;
+    eextent = [max(e-margin,-90)*pi/180 min(e+margin,90)*pi/180];        
+    % distance
+    dextent = [0, 100];
+    v0(3) = compute_distance(v0(1), v0(2), dextent, x2d, x3d);
+    d = v0(3);
+    margin = 5;
+    dextent = [max(d-margin,0) min(d+margin,100)];
+    % focal length
+    v0(4) = 1;
+    fextent = [1 1];
+    % principal point
+    [principal_point, lbp, ubp] = compute_principal_point(v0(1), v0(2), v0(3), x2d, x3d);
+    v0(5) = principal_point(1);
+    v0(6) = principal_point(2);
+    % in-plane rotation
+    v0(7) = 0;
+    rextent = [-pi, pi];
+    % lower bound
+    lb = [aextent(1); eextent(1); dextent(1); fextent(1); lbp(1); lbp(2); rextent(1)];
+    % upper bound
+    ub = [aextent(2); eextent(2); dextent(2); fextent(2); ubp(1); ubp(2); rextent(2)];
+
+    % optimization
+    v_out = zeros(10,1);
+    [v_out(1), v_out(2), v_out(3), v_out(4), v_out(5), v_out(6), v_out(7), v_out(8), v_out(9), v_out(10)]...
+        = compute_viewpoint_one(v0, lb, ub, x2d, x3d);
+
+    % assign output
+    azimuth = v_out(1);
+    elevation = v_out(2);
+    distance = v_out(3); 
+    focal = v_out(4);
+    px = v_out(5);
+    py = v_out(6);
+    theta = v_out(7);
+    error = v_out(8);
+    interval_azimuth = v_out(9);
+    interval_elevation = v_out(10);
+    str = sprintf('a=%f, e=%f, d=%f, f=%f, theta=%f\n', azimuth, elevation,...
+            distance, focal, theta);
+    set(handles.text_filename, 'String', str);
+    
+    % show overlay of the CAD model
+    vertices = cad.vertices;
+    faces = cad.faces;
+    object.viewpoint.azimuth = azimuth;
+    object.viewpoint.elevation = elevation;
+    object.viewpoint.distance = distance;
+    object.viewpoint.focal = 1;
+    object.viewpoint.theta = theta;
+    object.viewpoint.px = px;
+    object.viewpoint.py = py;
+    object.viewpoint.viewport = 3000;
+    x2d = project_3d_points(vertices, object);
+    if isempty(x2d) == 0
+        set(handles.figure1, 'CurrentAxes', handles.axes_image);
+        hold on;
+        patch('vertices', x2d ,'faces', faces, ...
+            'FaceColor', 'blue', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
+        hold off;
+    end
+    
+    handles.azimuth = azimuth; 
+    handles.elevation = elevation;
+    handles.distance = distance;
+    handles.theta = theta;
+    
+    matfile = sprintf('%s/%s.mat', handles.dest_dir, handles.name);
+
+    
+    fprintf('handles.object_index: %d \n', handles.object_index)
+    
+    record = handles.record;
+    
+    fprintf('length(record.objects): %d \n', length(record.objects))
+    
+    
+    
+    for i = 1:handles.part_num
+        record.objects(handles.object_index).anchors.(handles.cad(handles.cad_index).pnames{i}) = handles.(handles.cad(handles.cad_index).pnames{i});
+    end
+    record.objects(handles.object_index).viewpoint.azimuth_coarse = viewpoint.azimuth_coarse;
+    record.objects(handles.object_index).viewpoint.elevation_coarse = viewpoint.elevation_coarse;
+    record.objects(handles.object_index).cad_index = handles.cad_index;
+
+    record.objects(handles.object_index).viewpoint.azimuth = azimuth;
+    record.objects(handles.object_index).viewpoint.elevation = elevation;
+    record.objects(handles.object_index).viewpoint.theta = theta;
+    record.objects(handles.object_index).viewpoint.distance = distance;
+
+    record.objects(handles.object_index).viewpoint.focal = focal;
+    record.objects(handles.object_index).viewpoint.px = px;
+    record.objects(handles.object_index).viewpoint.py = py;
+    record.objects(handles.object_index).viewpoint.viewport = 3000;
+
+    save(matfile, 'record');
+    
+    % load again to refresh the handles
+    object = load(matfile);
+    record = object.record;
+    handles.record = record;
+    
+    handles.count_save = handles.count_save + 1;
+    str = sprintf('Annotation saved, total %d', handles.count_save);
+    set(handles.text_save, 'String', str);
+
+    
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% save annotations
 
 
 % --- Executes on button press in pushbutton_nextcad.
@@ -1648,10 +2012,9 @@ end
 % compute continous viewpoint
 num_anch = size(x2d,1);
 if num_anch < 2
-      set(handles.text_filename, 'String', 'number of anchor less than 2');
+    set(handles.text_filename, 'String', 'number of anchor less than 2');
 else
-    %{
-    % initialization
+    % inialization
     v0 = zeros(7,1);
     % azimuth
     a = viewpoint.azimuth_coarse;
@@ -1688,19 +2051,18 @@ else
     v_out = zeros(10,1);
     [v_out(1), v_out(2), v_out(3), v_out(4), v_out(5), v_out(6), v_out(7), v_out(8), v_out(9), v_out(10)]...
         = compute_viewpoint_one(v0, lb, ub, x2d, x3d);
-    %}
 
     % assign output
-    azimuth = 0;
-    elevation = 0;
-    distance = 0; 
-    focal = 0;
-    px = 0;
-    py = 0;
-    theta = 0;
-    error = 0;
-    interval_azimuth = 0;
-    interval_elevation = 0;
+    azimuth = v_out(1);
+    elevation = v_out(2);
+    distance = v_out(3); 
+    focal = v_out(4);
+    px = v_out(5);
+    py = v_out(6);
+    theta = v_out(7);
+    error = v_out(8);
+    interval_azimuth = v_out(9);
+    interval_elevation = v_out(10);
     str = sprintf('a=%f, e=%f, d=%f, f=%f, theta=%f\n', azimuth, elevation,...
             distance, focal, theta);
     set(handles.text_filename, 'String', str);
@@ -1717,7 +2079,6 @@ else
     object.viewpoint.py = py;
     object.viewpoint.viewport = 3000;
     x2d = project_3d_points(vertices, object);
-    %{
     if isempty(x2d) == 0
         set(handles.figure1, 'CurrentAxes', handles.axes_image);
         hold on;
@@ -1725,7 +2086,6 @@ else
             'FaceColor', 'blue', 'FaceAlpha', 0.2, 'EdgeColor', 'none');
         hold off;
     end
-    %}
     
     handles.azimuth = azimuth; 
     handles.elevation = elevation;
@@ -1740,7 +2100,6 @@ else
     record = handles.record;
     
     fprintf('length(record.objects): %d \n', length(record.objects))
-    
     
     
     
@@ -1772,41 +2131,9 @@ else
     str = sprintf('Annotation saved, total %d', handles.count_save);
     set(handles.text_save, 'String', str);
 
-    % show the annotations
-    for i = 1:numel(record.objects)
-        if strcmp(record.objects(i).class, handles.cls) == 1
-            bbox = record.objects(i).bbox;
-            bbox_draw = [bbox(1) bbox(2) bbox(3)-bbox(1) bbox(4)-bbox(2)];
-            set(handles.figure1, 'CurrentAxes', handles.axes_image);
-            cla;
-            imshow(handles.image);
-            hold on;
-            rectangle('Position', bbox_draw, 'EdgeColor', 'g');
-            handles.object_index = i;
-            % show annotated anchor points
-            if isfield(record.objects(i), 'anchors') == 1 && isempty(record.objects(i).anchors) == 0
-                names = fieldnames(record.objects(i).anchors);
-                for j = 1:numel(names)
-                    if record.objects(i).anchors.(names{j}).status == 1
-                        if isempty(record.objects(i).anchors.(names{j}).location) == 0
-                            x = record.objects(i).anchors.(names{j}).location(1);
-                            y = record.objects(i).anchors.(names{j}).location(2);
-                            plot(x, y, 'ro');
-                        else
-                            fprintf('anchor point %s is missing!\n', names{j});
-                            set(handles.text_save, 'String', 'Re-annotate!');
-                        end
-                    end
-                end                
-            end
-            break;
-        end
-    end     
-
-
-
-
+    
 end
+
 
 % compute the initial distance
 function distance = compute_distance(azimuth, elevation, dextent, x2d, x3d)
@@ -2139,34 +2466,55 @@ function pushbutton_view_ButtonDownFcn(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 
-function setGlobal_pose(val)
-global pose_num;
-pose_num = val;
+function setGlobal_azimuth(val)
+global azi_num;
+azi_num = val;
 
-function r = getGlobal_pose
-global pose_num;
-if isempty(pose_num)
-    pose_num = 1;
+function r = getGlobal_azimuth
+global azi_num;
+if isempty(azi_num)
+    azi_num = 1;
 end
-r = pose_num;
+r = azi_num;
+
+function setGlobal_ele(val)
+global ele_num;
+ele_num = val;
+
+function r = getGlobal_ele
+global ele_num;
+if isempty(ele_num)
+    ele_num = 1;
+end
+r = ele_num;
+
+
+
 
 function pose = get_pose
-global pose_num;
-pose_arr = [0 -90; 0 -45; 0 0; 0 45; 0 90; 
-            60 -90; 60 -45; 60 0; 60 45; 60 90; 
-            120 -90; 120 -45; 120 0; 120 45; 120 90;
-            180 -90; 180 -45; 180 0; 180 45; 180 90;
-            270 -90; 270 -45; 270 0; 270 45; 270 90;
-            ];
+global azi_num;
+global ele_num;
 
-pose = pose_arr(pose_num,:);
+azimuth_arr =  [
+
+0; 45 ; 60 ; 90 ; 135 ; 180 ;
+235 ; 250 ; 295 ; 340 ; 
+
+            ];
+eleva_arr = [
+    0; 15; 35; 40; -10; -20;
+];
+
+pose = [azimuth_arr(azi_num, 1) eleva_arr(ele_num, 1)];
+
 
 % --- Executes on button press in pushbutton29.
 function pushbutton29_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton29 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global pose_num;
+global azi_num;
+
 % display cad model
 cad = handles.cad;
 set(handles.figure1, 'CurrentAxes', handles.axes_cad);
@@ -2188,14 +2536,15 @@ hold off;
 %if handles.elevation < -90
 %    handles.elevation = -90;
 %end
-pose_num = getGlobal_pose();
-pose_num = pose_num - 1;
-if pose_num < 1
-    pose_num = 25;
+azi_num = getGlobal_azimuth();
+azi_num = azi_num + 1;
+if azi_num > 10
+    azi_num = 1;
 end
 
-setGlobal_pose(pose_num)
+setGlobal_azimuth(azi_num)
 new_pose = get_pose();
+%new_pose
 
 handles.azimuth = new_pose(1);
 handles.elevation = new_pose(2);
@@ -2212,7 +2561,8 @@ function pushbutton30_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton29 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global pose_num;
+global ele_num;
+
 % display cad model
 cad = handles.cad;
 set(handles.figure1, 'CurrentAxes', handles.axes_cad);
@@ -2230,20 +2580,16 @@ for i = 1:numel(cad(handles.cad_index).pnames)
 end
 hold off;
 
-%handles.elevation = handles.elevation - 2.5;
-%if handles.elevation < -90
-%    handles.elevation = -90;
-%end
-pose_num = getGlobal_pose();
-pose_num = pose_num + 1;
-if pose_num > 25
-    pose_num = 1;
+ele_num = getGlobal_ele();
+ele_num = ele_num + 1;
+if ele_num > 6
+    ele_num = 1;
 end
 
-setGlobal_pose(pose_num)
+setGlobal_ele(ele_num)
 new_pose = get_pose();
+%new_pose
 
-% % % 
 handles.azimuth = new_pose(1);
 handles.elevation = new_pose(2);
 
@@ -2252,60 +2598,3 @@ guidata(hObject, handles);
 
 set(handles.edit_azimuth, 'String', num2str(handles.azimuth));
 set(handles.edit_elevation, 'String', num2str(handles.elevation));
-
-%{
-
-
-% hObject    handle to pushbutton30 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% display cad model
-cad = handles.cad;
-set(handles.figure1, 'CurrentAxes', handles.axes_cad);
-cla;
-trimesh(cad(handles.cad_index).faces, cad(handles.cad_index).vertices(:,1), cad(handles.cad_index).vertices(:,2), cad(handles.cad_index).vertices(:,3), 'EdgeColor', 'b');
-axis equal;
-hold on;
-
-% display anchor points
-for i = 1:numel(cad(handles.cad_index).pnames)
-    X = cad(handles.cad_index).(cad(handles.cad_index).pnames{i});
-    if isempty(X) == 0
-        plot3(X(1), X(2), X(3), 'ro', 'LineWidth', 5);
-    end
-end
-hold off;
-
-
-if handles.azimuth > 300
-    handles.azimuth = 300;
-elseif handles.azimuth > 240
-    handles.azimuth = 240;
-elseif handles.azimuth > 180
-    handles.azimuth = 180;
-elseif handles.azimuth > 120
-    handles.azimuth = 120;
-elseif handles.azimuth > 60
-    handles.azimuth = 60;
-elseif handles.azimuth > 0
-    handles.azimuth = 0;
-elseif handles.elevation > 45
-    handles.elevation = 45;
-elseif handles.elevation > 0
-    handles.elevation = 0;
-elseif handles.elevation > -45
-    handles.elevation = -45;
-elseif handles.elevation > -90
-    handles.elevation = -90;
-end
-
-
-
-view(handles.azimuth, handles.elevation);
-guidata(hObject, handles);
-
-set(handles.edit_azimuth, 'String', num2str(handles.azimuth));
-set(handles.edit_elevation, 'String', num2str(handles.elevation));
-%}
-
