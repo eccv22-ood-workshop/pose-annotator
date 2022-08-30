@@ -240,8 +240,15 @@ else
                 axis equal;
                 hold on;
                 
-                handles.azimuth = record.objects(i).viewpoint.azimuth_coarse;
-                handles.elevation = record.objects(i).viewpoint.elevation_coarse;
+%                 handles.azimuth = record.objects(i).viewpoint.azimuth_coarse;
+%                 handles.elevation = record.objects(i).viewpoint.elevation_coarse;
+                if isfield(record.objects(i), 'viewpoint') == 0
+                    handles.azimuth = 0;
+                    handles.elevation = 0;
+                else
+                    handles.azimuth = record.objects(i).viewpoint.azimuth_coarse;
+                    handles.elevation = record.objects(i).viewpoint.elevation_coarse;
+                end
                 view(handles.azimuth, handles.elevation);
                 set(handles.edit_azimuth, 'String', num2str(handles.azimuth));
                 set(handles.edit_elevation, 'String', num2str(handles.elevation));
@@ -1971,7 +1978,12 @@ handles.anchor_index = find(flag == 1);
 
 ismiss = zeros(numel(flag), 1);
 if isfield(record.objects(object_index), 'cad_index') == 1 && isempty(record.objects(object_index).cad_index) == 0
+    
+    
     for i = 1:numel(flag)
+        if isfield(record.objects(object_index), 'anchors') == 0
+            continue
+        end
         if flag(i) == 1 && record.objects(object_index).anchors.(cad(handles.cad_index).pnames{i}).status == 2
             fprintf('object %d: %s missed\n', object_index, cad(handles.cad_index).pnames{i});
             ismiss(i) = 1;
@@ -2492,8 +2504,8 @@ r = ele_num;
 
 
 function pose = get_pose
-global azi_num;
-global ele_num;
+azi_num = getGlobal_azimuth;
+ele_num = getGlobal_ele;
 
 azimuth_arr =  [
 
@@ -2588,7 +2600,7 @@ end
 
 setGlobal_ele(ele_num)
 new_pose = get_pose();
-%new_pose
+new_pose
 
 handles.azimuth = new_pose(1);
 handles.elevation = new_pose(2);
