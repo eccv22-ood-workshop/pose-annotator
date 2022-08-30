@@ -91,7 +91,16 @@ if isequal(FileName,0)
 end
 cad = load(fullfile(PathName, FileName));
 cls = FileName(1:end-4);
+if strcmp(cls, 'table')
+    cls = 'diningtable';
+end
 cad = cad.(cls);
+
+if strcmp(cls, 'diningtable')
+    cls = 'table';
+end
+
+
 handles.cls = cls;
 handles.count_save = 0;
 handles.cad = cad;
@@ -192,6 +201,7 @@ else
     handles.record = record;
 
     % show the annotations
+    handles.cls
     for i = 1:numel(record.objects)
         if strcmp(record.objects(i).class, handles.cls) == 1
             bbox = record.objects(i).bbox;
@@ -432,6 +442,9 @@ if isfield(handles.record.objects(handles.object_index), 'cad_index') == 1 &&...
 else
     handles.cad_index = 1;
 end
+if handles.cad_index == 0
+    handles.cad_index = 1;
+end
 for i = 1:handles.part_num
     handles.(handles.cad(handles.cad_index).pnames{i}).location = [];
     handles.(handles.cad(handles.cad_index).pnames{i}).status = 0;
@@ -643,6 +656,9 @@ if isfield(handles.record.objects(handles.object_index), 'cad_index') == 1 &&...
 else
     handles.cad_index = 1;
 end
+if handles.cad_index == 0
+    handles.cad_index = 1;
+end
 for i = 1:handles.part_num
     handles.(handles.cad(handles.cad_index).pnames{i}).location = [];
     handles.(handles.cad(handles.cad_index).pnames{i}).status = 0;
@@ -805,6 +821,9 @@ if isfield(handles.record.objects(handles.object_index), 'cad_index') == 1 &&...
         isempty(handles.record.objects(handles.object_index).cad_index) == 0
     handles.cad_index = handles.record.objects(handles.object_index).cad_index;
 else
+    handles.cad_index = 1;
+end
+if handles.cad_index == 0
     handles.cad_index = 1;
 end
 for i = 1:handles.part_num
@@ -1592,6 +1611,8 @@ locations = [0 0; 0 0];
 while while_flag
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% label anchor point
     % re-show the image
+    handles.record.objects
+    handles.object_index
     bbox = handles.record.objects(handles.object_index).bbox;
     bbox_draw = [bbox(1) bbox(2) bbox(3)-bbox(1) bbox(4)-bbox(2)];
     set(handles.axes_image, 'NextPlot', 'replacechildren');
